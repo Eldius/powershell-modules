@@ -38,7 +38,24 @@ if (-not (Test-Path -LiteralPath $ModulePath -PathType Container)) {
 foreach ($moduleDirectory in $moduleDirectories) {
     $moduleDestination = Join-Path $ModulePath $moduleDirectory.Name
     if ($PSCmdlet.ShouldProcess($moduleDestination, "Install module '$($moduleDirectory.Name)'")) {
-        Copy-Item -LiteralPath $moduleDirectory.FullName -Destination $ModulePath -Recurse -Force -ErrorAction Stop
+        if (-not (Test-Path -LiteralPath $moduleDestination -PathType Container)) {
+            $null = New-Item -ItemType Directory -Path $moduleDestination -Force -ErrorAction Stop
+        }
+
+        foreach ($sourceFile in Get-ChildItem -LiteralPath $moduleDirectory.FullName -Recurse -File) {
+            $relativePath = $sourceFile.FullName.Substring($moduleDirectory.FullName.Length).
+                TrimStart([char[]]@([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar))
+            $destinationFile = Join-Path $moduleDestination $relativePath
+            if ($sourceFile.Name -ieq 'config.json' -and (Test-Path -LiteralPath $destinationFile -PathType Leaf)) {
+                continue
+            }
+
+            $destinationDirectory = Split-Path -Parent $destinationFile
+            if (-not (Test-Path -LiteralPath $destinationDirectory -PathType Container)) {
+                $null = New-Item -ItemType Directory -Path $destinationDirectory -Force -ErrorAction Stop
+            }
+            Copy-Item -LiteralPath $sourceFile.FullName -Destination $destinationFile -Force -ErrorAction Stop
+        }
     }
 }
 
