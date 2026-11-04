@@ -99,6 +99,17 @@ so verify before sending again to avoid duplicates.
 
 ## PowerShell profile
 
+Run the installer from this repository to copy its modules into the current
+user's default module directory and import them from your profile for every
+host. The install is idempotent; rerun it to update the installed modules after
+changing them. Use `-WhatIf` to preview the changes, then open a new PowerShell
+session to load the modules. Pass `-ModulePath` to use a different module
+directory.
+
+```powershell
+.\install.ps1
+```
+
 ```powershell
 # Display profile file location
 Write-Output $profile

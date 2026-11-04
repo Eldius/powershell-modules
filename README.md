@@ -101,7 +101,21 @@ para evitar duplicatas.
 
 ## Perfil do PowerShell
 
+Execute o instalador neste repositório para copiar os módulos do projeto para o
+diretório padrão de módulos do usuário atual e importá-los pelo perfil, em todos
+os hosts. A instalação é idempotente; execute novamente para atualizar os
+módulos instalados após alterações. Use `-WhatIf` para visualizar as mudanças e
+abra uma nova sessão do PowerShell para carregar os módulos. Use `-ModulePath`
+para selecionar outro diretório.
+
+```powershell
+.\install.ps1
+```
+
 ```powershell
 # Exibe o caminho do arquivo de perfil
 Write-Output $profile
+
+# Exibe o caminho do arquivo de perfil alterado pelo install.ps1
+Write-Output $PROFILE.CurrentUserAllHosts
 ```

@@ -152,9 +152,16 @@ function runMvn {
     }
 
     $javaVersion = javaVersionFromPom
+    if ([string]::IsNullOrWhiteSpace($javaVersion)) {
+        throw 'Could not determine java.version from pom.xml.'
+    }
 
-    $javaHome = $jdkPaths[$javaVersion]
+    $jdkEntry = $jdkPaths.PSObject.Properties[$javaVersion]
+    if ($null -eq $jdkEntry -or [string]::IsNullOrWhiteSpace($jdkEntry.Value)) {
+        throw ('Java version {0} is not configured in config.json. Use Set-JdkPath to add its JDK path.' -f $javaVersion)
+    }
 
+    $javaHome = $jdkEntry.Value
 
     $fullPath = $env:Path
     $arrPath = $env:Path -split ';' | Where-Object {$_ -notmatch [regex]::Escape($javaHome)}
@@ -230,18 +237,13 @@ function runApp {
             [System.Environment]::SetEnvironmentVariable($name, $value, 'Process')
         }
 
-        # >>> Comando que deve receber as variáveis <<<
-        # Exemplos:
-        #   .\meu_script.ps1
-        #   & "C:\caminho\app.exe" --flag
-        #   python app.py
-
         $javaVersion = javaVersionFromPom
         if ([string]::IsNullOrWhiteSpace($javaVersion)) {
             throw 'Could not determine java.version from pom.xml.'
         }
-        if (-not $jdkPaths.ContainsKey($javaVersion)) {
-            throw ('Java version {0} is not configured in jdkPaths.' -f $javaVersion)
+        $jdkEntry = $jdkPaths.PSObject.Properties[$javaVersion]
+        if ($null -eq $jdkEntry -or [string]::IsNullOrWhiteSpace($jdkEntry.Value)) {
+            throw ('Java version {0} is not configured in config.json. Use Set-JdkPath to add its JDK path.' -f $javaVersion)
         }
 
         $targetDir = Join-Path (Get-Location) 'target'
@@ -258,7 +260,7 @@ function runApp {
         }
         $javaParams = $debugOpts + @($javaOpts) + @('-jar', $jarFiles[0].FullName) + @($appArgs)
 
-        $javaHome = $jdkPaths[$javaVersion]
+        $javaHome = $jdkEntry.Value
         $java = Join-Path $javaHome 'bin\java.exe'
         if (-not (Test-Path -LiteralPath $java -PathType Leaf)) {
             throw ('Java executable not found: ' + $java)
