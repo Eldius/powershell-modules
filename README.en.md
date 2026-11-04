@@ -11,6 +11,14 @@ Import the module you need from this directory. The Java module exports:
 
 The Service Bus module exports `publishEvt`, which publishes a file as one Azure Service Bus queue message.
 
+Each exported function accepts `-Help` to display its summary and parameter descriptions. You can also use PowerShell's help command, for example:
+
+```powershell
+runApp -Help
+Get-Help runApp -Full
+publishEvt -Help
+```
+
 ### Java and Maven
 
 From this directory, import the module and call its commands from a Maven project directory:

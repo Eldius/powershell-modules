@@ -1,6 +1,37 @@
 function publishEvt {
     [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = 'Environment')]
+    <#
+    .SYNOPSIS
+    Publishes a file as one Azure Service Bus queue message.
+
+    .DESCRIPTION
+    Sends the file unchanged using a SAS connection string supplied directly, through an environment variable, or from a .env file.
+
+    .PARAMETER BindingDefinition
+    SAS connection string containing Endpoint, SharedAccessKeyName, and SharedAccessKey. EntityPath may specify the queue.
+
+    .PARAMETER EnvironmentVariableName
+    Name of the environment variable containing the SAS connection string. Defaults to SERVICEBUS_CONNECTION_STRING.
+
+    .PARAMETER DotEnvPath
+    .env file containing AZURE_SERVICE_BUS_CONNECTION_STRING.
+
+    .PARAMETER FilePath
+    Path to the file to publish as one message.
+
+    .PARAMETER QueueName
+    Queue to publish to when EntityPath is absent from the connection string.
+
+    .PARAMETER ContentType
+    Message content type. Defaults to application/octet-stream.
+
+    .PARAMETER Help
+    Displays this command's summary and parameter descriptions.
+    #>
     param(
+        [Parameter(Mandatory, ParameterSetName = 'Help')]
+        [switch]$Help,
+
         [Parameter(Mandatory, ParameterSetName = 'Direct')]
         [Alias('ConnectionString')]
         [ValidateNotNullOrEmpty()]
@@ -14,7 +45,9 @@ function publishEvt {
         [ValidateNotNullOrEmpty()]
         [string]$DotEnvPath,
 
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, ParameterSetName = 'Environment')]
+        [Parameter(Mandatory, ParameterSetName = 'Direct')]
+        [Parameter(Mandatory, ParameterSetName = 'DotEnv')]
         [Alias('Path')]
         [ValidateNotNullOrEmpty()]
         [string]$FilePath,
@@ -25,6 +58,11 @@ function publishEvt {
         [ValidateNotNullOrEmpty()]
         [string]$ContentType = 'application/octet-stream'
     )
+
+    if ($Help) {
+        Get-Help -Name publishEvt -Full
+        return
+    }
 
     if ($PSCmdlet.ParameterSetName -eq 'Environment') {
         $environmentBinding = [Environment]::GetEnvironmentVariable($EnvironmentVariableName)

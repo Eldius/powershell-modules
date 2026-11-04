@@ -7,7 +7,33 @@ $jdkPaths = $config.java
 
 
 function Import-DotEnv {
-    param([Parameter(Mandatory)][string]$Path)
+    <#
+    .SYNOPSIS
+    Reads environment variable assignments from a .env file.
+
+    .DESCRIPTION
+    Returns supported assignments as name=value strings without changing the process environment.
+
+    .PARAMETER Path
+    Path to the .env file. A missing file returns an empty result.
+
+    .PARAMETER Help
+    Displays this command's summary and parameter descriptions.
+    #>
+    [CmdletBinding(DefaultParameterSetName = 'Read')]
+    param(
+        [Parameter(Mandatory, ParameterSetName = 'Read')]
+        [string]$Path,
+
+        [Parameter(Mandatory, ParameterSetName = 'Help')]
+        [switch]$Help
+    )
+
+    if ($Help) {
+        Get-Help -Name Import-DotEnv -Full
+        return
+    }
+
     if (-not (Test-Path -LiteralPath $Path)) { return @() }
 
     $pairs = [System.Collections.Generic.List[string]]::new()
@@ -53,8 +79,28 @@ function javaVersionFromPom {
 
 function Set-JdkPath {
     [CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName = 'Set')]
+    <#
+    .SYNOPSIS
+    Adds, updates, or removes a JDK path in the Java module configuration.
+
+    .DESCRIPTION
+    Stores JDK paths by Java version in config.json next to this module.
+
+    .PARAMETER Version
+    Java version key to add, update, or remove, such as 21 or 17.0.
+
+    .PARAMETER Path
+    Existing JDK installation directory to associate with Version.
+
+    .PARAMETER Remove
+    Removes the specified Version from the configuration.
+
+    .PARAMETER Help
+    Displays this command's summary and parameter descriptions.
+    #>
     param(
-        [Parameter(Mandatory)]
+        [Parameter(Mandatory, ParameterSetName = 'Set')]
+        [Parameter(Mandatory, ParameterSetName = 'Remove')]
         [ValidatePattern('^\d+(\.\d+)?$')]
         [string]$Version,
 
@@ -63,8 +109,16 @@ function Set-JdkPath {
         [string]$Path,
 
         [Parameter(Mandatory, ParameterSetName = 'Remove')]
-        [switch]$Remove
+        [switch]$Remove,
+
+        [Parameter(Mandatory, ParameterSetName = 'Help')]
+        [switch]$Help
     )
+
+    if ($Help) {
+        Get-Help -Name Set-JdkPath -Full
+        return
+    }
 
     $currentConfig = Get-Content -Raw -LiteralPath $configPath | ConvertFrom-Json
     $jdkMap = $currentConfig.java
@@ -143,11 +197,38 @@ function ConvertFrom-ArgumentString {
 }
 
 function runMvn {
+    <#
+    .SYNOPSIS
+    Runs Maven, selecting the configured JDK for the current Maven project.
+
+    .DESCRIPTION
+    When the current directory contains a pom.xml, selects the JDK mapped to its java.version before running Maven. Otherwise, invokes Maven using the current PATH.
+
+    .PARAMETER MavenArguments
+    Arguments passed unchanged to Maven, such as clean verify or -DskipTests=true.
+
+    .PARAMETER Help
+    Displays this command's summary and parameter descriptions.
+    #>
+    [CmdletBinding(DefaultParameterSetName = 'Maven')]
+    param(
+        [Parameter(ValueFromRemainingArguments = $true, ParameterSetName = 'Maven')]
+        [object[]]$MavenArguments,
+
+        [Parameter(Mandatory, ParameterSetName = 'Help')]
+        [switch]$Help
+    )
+
+    if ($Help) {
+        Get-Help -Name runMvn -Full
+        return
+    }
+
     $CurrDir = $PWD.Path
     $PomPath = "$CurrDir\pom.xml"
 
     if(![System.IO.File]::Exists($PomPath)) {
-        return mvn $args
+        return mvn @MavenArguments
         # return $LASTEXITCODE
     }
 
@@ -176,14 +257,14 @@ function runMvn {
         Write-Output $("| java: $javaHome")
         Write-Output $lineSeparatorPattern
         Write-Output $lineSeparatorPattern
-        Write-Output $("| running: mvn $($args -join ' ')")
+        Write-Output $("| running: mvn $($MavenArguments -join ' ')")
         Write-Output $lineSeparatorPattern
         Write-Output ""
         Write-Output ""
 
         [System.Environment]::SetEnvironmentVariable('Path', $newPath, 'Process')
 
-        & mvn $args
+        & mvn @MavenArguments
 
         $exitCode = $LASTEXITCODE
     }
@@ -195,7 +276,32 @@ function runMvn {
 }
 
 function runApp {
-    param([switch]$RemoteDebug)
+    <#
+    .SYNOPSIS
+    Builds and runs the current Java application's packaged JAR.
+
+    .DESCRIPTION
+    Builds with mvn clean package -Pazure, loads optional .env values for the child process, and runs the project's single JAR using the configured JDK.
+
+    .PARAMETER RemoteDebug
+    Starts the Java process with a remote debugger listening on port 5005.
+
+    .PARAMETER Help
+    Displays this command's summary and parameter descriptions.
+    #>
+    [CmdletBinding(DefaultParameterSetName = 'Run')]
+    param(
+        [Parameter(ParameterSetName = 'Run')]
+        [switch]$RemoteDebug,
+
+        [Parameter(Mandatory, ParameterSetName = 'Help')]
+        [switch]$Help
+    )
+
+    if ($Help) {
+        Get-Help -Name runApp -Full
+        return
+    }
 
     runMvn clean package -Pazure
     $exitCode = $LASTEXITCODE

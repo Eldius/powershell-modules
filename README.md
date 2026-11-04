@@ -11,6 +11,14 @@ Importe deste diretório o módulo necessário. O módulo Java exporta:
 
 O módulo Service Bus exporta `publishEvt`, que publica um arquivo como uma única mensagem em uma fila do Azure Service Bus.
 
+Todas as funções exportadas aceitam `-Help` para exibir um resumo e as descrições dos parâmetros. Também é possível usar o comando de ajuda do PowerShell:
+
+```powershell
+runApp -Help
+Get-Help runApp -Full
+publishEvt -Help
+```
+
 ### Java e Maven
 
 Neste diretório, importe o módulo e execute seus comandos a partir do diretório de um projeto Maven:
