@@ -155,6 +155,92 @@ function Set-JdkPath {
     return $script:jdkPaths
 }
 
+function Set-MavenProfiles {
+    <#
+    .SYNOPSIS
+    Lists or changes the Maven profiles activated by runMvn.
+
+    .DESCRIPTION
+    Stores profiles in config.json and applies changes immediately to this module.
+    With no arguments, returns the configured profiles without changing them.
+
+    .PARAMETER Profiles
+    Profile IDs to use. Replaces the list unless Add or Remove is specified.
+
+    .PARAMETER Add
+    Adds profiles without duplicating existing IDs. IDs are case-sensitive.
+
+    .PARAMETER Remove
+    Removes the specified profiles. Missing IDs are ignored.
+
+    .PARAMETER Clear
+    Removes all configured profiles.
+
+    .PARAMETER Help
+    Displays this command's summary and parameter descriptions.
+    #>
+    [CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName = 'List')]
+    param(
+        [Parameter(Mandatory, Position = 0, ParameterSetName = 'Set')]
+        [Parameter(Mandatory, Position = 0, ParameterSetName = 'Add')]
+        [Parameter(Mandatory, Position = 0, ParameterSetName = 'Remove')]
+        [ValidateNotNullOrEmpty()]
+        [ValidatePattern('^[^\s,]+$')]
+        [string[]]$Profiles,
+
+        [Parameter(Mandatory, ParameterSetName = 'Add')]
+        [switch]$Add,
+
+        [Parameter(Mandatory, ParameterSetName = 'Remove')]
+        [switch]$Remove,
+
+        [Parameter(Mandatory, ParameterSetName = 'Clear')]
+        [switch]$Clear,
+
+        [Parameter(Mandatory, ParameterSetName = 'Help')]
+        [switch]$Help
+    )
+
+    if ($Help) {
+        Get-Help -Name Set-MavenProfiles -Full
+        return
+    }
+
+    $currentConfig = Get-Content -Raw -LiteralPath $configPath -ErrorAction Stop | ConvertFrom-Json
+    $currentProfiles = @($currentConfig.maven.profiles) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    if ($PSCmdlet.ParameterSetName -eq 'List') {
+        return $currentProfiles
+    }
+
+    $updatedProfiles = [System.Collections.Generic.List[string]]::new()
+    if ($Add -or $Remove) {
+        foreach ($profileId in $currentProfiles) {
+            if ((-not $Remove -or $Profiles -cnotcontains $profileId) -and -not $updatedProfiles.Contains($profileId)) {
+                $updatedProfiles.Add($profileId)
+            }
+        }
+    }
+    if (-not $Clear -and -not $Remove) {
+        foreach ($profileId in $Profiles) {
+            if (-not $updatedProfiles.Contains($profileId)) {
+                $updatedProfiles.Add($profileId)
+            }
+        }
+    }
+
+    if ($PSCmdlet.ShouldProcess($configPath, ('Set Maven profiles: {0}' -f ($updatedProfiles -join ', ')))) {
+        if ($null -eq $currentConfig.maven) {
+            $currentConfig | Add-Member -MemberType NoteProperty -Name maven -Value ([pscustomobject]@{}) -Force
+        }
+        $currentConfig.maven | Add-Member -MemberType NoteProperty -Name profiles -Value $updatedProfiles.ToArray() -Force
+        $currentConfig | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $configPath -Encoding UTF8 -ErrorAction Stop
+        $script:config = $currentConfig
+        return $updatedProfiles.ToArray()
+    }
+
+    return $currentProfiles
+}
+
 function ConvertFrom-ArgumentString {
     param([AllowEmptyString()][string]$Value)
 
@@ -202,7 +288,7 @@ function runMvn {
     Runs Maven, selecting the configured JDK for the current Maven project.
 
     .DESCRIPTION
-    When the current directory contains a pom.xml, selects the JDK mapped to its java.version before running Maven. Otherwise, invokes Maven using the current PATH.
+    When the current directory contains a pom.xml, selects the JDK mapped to its java.version before running Maven. Otherwise, invokes Maven using the current PATH. Activates profiles configured in config.json under maven.profiles.
 
     .PARAMETER MavenArguments
     Arguments passed unchanged to Maven, such as clean verify or -DskipTests=true.
@@ -222,6 +308,11 @@ function runMvn {
     if ($Help) {
         Get-Help -Name runMvn -Full
         return
+    }
+
+    $profiles = @($config.maven.profiles) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    if ($profiles) {
+        $MavenArguments = @($MavenArguments) + @('-P' + ($profiles -join ','))
     }
 
     $CurrDir = $PWD.Path
@@ -403,5 +494,6 @@ function runApp {
 
 Export-ModuleMember -Function Import-DotEnv
 Export-ModuleMember -Function Set-JdkPath
+Export-ModuleMember -Function Set-MavenProfiles
 Export-ModuleMember -Function runMvn
 Export-ModuleMember -Function runApp

@@ -6,6 +6,7 @@ Importe deste diretório o módulo necessário. O módulo Java exporta:
 
 - `Import-DotEnv`: Lê as atribuições compatíveis de um arquivo `.env` e as retorna como strings `nome=valor`. Não modifica o ambiente.
 - `Set-JdkPath`: Adiciona ou atualiza o caminho de um JDK em `java\config.json`; use `-Remove` para remover uma versão.
+- `Set-MavenProfiles`: Lista ou altera os perfis Maven ativados automaticamente por `runMvn`; as alteracoes sao salvas e aplicadas imediatamente.
 - `runMvn`: Executa o Maven e, quando presente, seleciona o JDK configurado em `java.version` no `pom.xml` do diretório atual.
 - `runApp`: Compila o projeto com `mvn clean package -Pazure` e, em seguida, executa o único arquivo JAR do projeto usando o JDK configurado. Carrega os valores de `.env` para o processo filho e restaura o ambiente do processo atual depois da execução.
 
@@ -50,6 +51,37 @@ uma alteração sem gravá-la.
 automática, o `pom.xml` do projeto deve definir `java.version` com uma versão
 configurada. `runApp` lê os valores opcionais `JAVA_OPTS` e `APP_ARGS` do ambiente
 do processo ou do arquivo `.env` do projeto.
+
+Gerencie os perfis Maven ativados automaticamente com `Set-MavenProfiles`:
+
+```powershell
+Set-MavenProfiles                              # Lista os perfis configurados.
+Set-MavenProfiles -Profiles dev,integration     # Substitui a lista.
+Set-MavenProfiles -Profiles qa -Add             # Adiciona sem duplicatas.
+Set-MavenProfiles -Profiles integration -Remove
+Set-MavenProfiles -Clear -WhatIf                # Simula a limpeza da lista.
+Set-MavenProfiles -Clear                       # Remove todos os perfis.
+Set-MavenProfiles -Help
+```
+
+Os IDs dos perfis diferenciam maiusculas de minusculas. Passe varios IDs como
+um array do PowerShell, nao como uma unica string separada por virgulas.
+O comando preserva as demais configuracoes e atualiza `maven.profiles` em
+[Modules/java/config.json](Modules/java/config.json):
+
+```json
+{
+	"maven": {
+		"profiles": ["dev", "integration"]
+	}
+}
+```
+
+Com essa configuração, `runMvn clean verify` passa
+`clean verify -Pdev,integration` ao Maven. Uma configuração de perfis vazia ou
+ausente não adiciona argumentos. Alteracoes feitas com `Set-MavenProfiles`
+entram em vigor imediatamente. Apos editar o JSON manualmente, importe
+novamente o modulo com `-Force`.
 
 ## Publicar um arquivo no Service Bus
 

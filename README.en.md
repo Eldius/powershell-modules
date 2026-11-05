@@ -6,6 +6,7 @@ Import the module you need from this directory. The Java module exports:
 
 - `Import-DotEnv`: Reads supported assignments from a `.env` file and returns them as `name=value` strings. It does not modify the environment.
 - `Set-JdkPath`: Adds or updates a JDK path in `java\config.json`; use `-Remove` to remove a version.
+- `Set-MavenProfiles`: Lists or changes the Maven profiles activated automatically by `runMvn`; changes are saved and applied immediately.
 - `runMvn`: Runs Maven, selecting the configured JDK from `java.version` in the current directory's `pom.xml` when present.
 - `runApp`: Builds the project with `mvn clean package -Pazure`, then runs its single JAR using the configured JDK. It loads `.env` values for the child process and restores the current process environment afterward.
 
@@ -50,6 +51,35 @@ a change without saving it.
 selection, the project `pom.xml` must define `java.version` as a configured
 version. `runApp` reads optional `JAVA_OPTS` and `APP_ARGS` values from the
 process environment or the project's `.env` file.
+
+Manage automatically activated Maven profiles with `Set-MavenProfiles`:
+
+```powershell
+Set-MavenProfiles                              # List configured profiles.
+Set-MavenProfiles -Profiles dev,integration     # Replace the list.
+Set-MavenProfiles -Profiles qa -Add             # Add without duplicates.
+Set-MavenProfiles -Profiles integration -Remove
+Set-MavenProfiles -Clear -WhatIf                # Preview clearing the list.
+Set-MavenProfiles -Clear                       # Clear all profiles.
+Set-MavenProfiles -Help
+```
+
+Profile IDs are case-sensitive. Pass multiple IDs as a PowerShell array, not a
+single comma-separated string. The command preserves unrelated configuration
+and updates `maven.profiles` in [Modules/java/config.json](Modules/java/config.json):
+
+```json
+{
+	"maven": {
+		"profiles": ["dev", "integration"]
+	}
+}
+```
+
+With this configuration, `runMvn clean verify` passes
+`clean verify -Pdev,integration` to Maven. An empty or missing profiles setting
+adds no arguments. Changes made with `Set-MavenProfiles` take effect immediately.
+After editing the JSON file manually, reimport the module with `-Force`.
 
 ## Publish a file to Service Bus
 
