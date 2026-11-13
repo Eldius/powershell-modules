@@ -89,7 +89,7 @@ Compatível com Windows PowerShell 5.1 e PowerShell 7; não requer módulo nem C
 Importe o módulo a partir deste diretório:
 
 ```powershell
-Import-Module .\event-hub\event-hub.psm1 -Force
+Import-Module .\azure-event-hub\azure-event-hub.psm1 -Force
 
 # String de conexão direta (use uma variável obtida de forma segura, não um segredo literal).
 publishEvt -BindingDefinition $connectionString -FilePath .\message.json -ContentType application/json
