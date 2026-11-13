@@ -144,9 +144,25 @@ changing them. Use `-WhatIf` to preview the changes, then open a new PowerShell
 session to load the modules. Pass `-ModulePath` to use a different module
 directory.
 
+The installer displays a checkbox menu. Use Up/Down to move, Space to toggle a
+module or **All**, Enter to install, and Esc to cancel without changes. At least
+one module must be selected. Only selected modules are copied and included in
+the managed profile block; previously installed files are not removed.
+Existing `config.json` files are preserved.
+
 ```powershell
 .\install.ps1
+
+# Skip the menu and install all modules (also suitable for automation).
+.\install.ps1 -All
+
+# Install only named modules, or preview their installation.
+.\install.ps1 -Modules java,azure-event-hub
+.\install.ps1 -Modules java -WhatIf
 ```
+
+Interactive selection requires a terminal. Use `-All` or `-Modules` when input
+or output is redirected. These two options cannot be combined.
 
 ```powershell
 # Display profile file location

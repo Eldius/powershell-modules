@@ -148,9 +148,26 @@ módulos instalados após alterações. Use `-WhatIf` para visualizar as mudanç
 abra uma nova sessão do PowerShell para carregar os módulos. Use `-ModulePath`
 para selecionar outro diretório.
 
+O instalador exibe um menu com caixas de selecao. Use as setas para cima/baixo
+para navegar, Espaco para marcar um modulo ou **All**, Enter para instalar e Esc
+para cancelar sem alteracoes. Selecione pelo menos um modulo. Apenas os modulos
+selecionados sao copiados e incluidos no bloco gerenciado do perfil; arquivos
+instalados anteriormente nao sao removidos. Arquivos `config.json` existentes
+sao preservados.
+
 ```powershell
 .\install.ps1
+
+# Instala todos os modulos sem abrir o menu (inclusive para automacao).
+.\install.ps1 -All
+
+# Instala apenas os modulos informados ou simula a instalacao.
+.\install.ps1 -Modules java,azure-event-hub
+.\install.ps1 -Modules java -WhatIf
 ```
+
+O menu exige um terminal interativo. Use `-All` ou `-Modules` quando a entrada
+ou a saida estiver redirecionada. Essas duas opcoes nao podem ser combinadas.
 
 ```powershell
 # Exibe o caminho do arquivo de perfil

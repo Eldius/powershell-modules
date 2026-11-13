@@ -4,8 +4,90 @@ param(
     [string]$ProfilePath = $PROFILE.CurrentUserAllHosts,
 
     [ValidateNotNullOrEmpty()]
-    [string]$ModulePath
+    [string]$ModulePath,
+
+    [ValidateNotNullOrEmpty()]
+    [string[]]$Modules,
+
+    [switch]$All
 )
+
+function Show-ModuleSelection {
+    param([string[]]$Names)
+
+    if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) {
+        throw 'Module selection requires an interactive terminal. Use -All or -Modules instead.'
+    }
+
+    $selected = New-Object bool[] $Names.Count
+    $cursor = 0
+    $message = ''
+    while ($true) {
+        Clear-Host
+        Write-Host 'Select modules to install'
+        Write-Host 'Up/Down: move | Space: toggle | Enter: install | Esc: cancel'
+        Write-Host ''
+
+        $selectedCount = @($selected | Where-Object { $_ }).Count
+        for ($index = 0; $index -le $Names.Count; $index++) {
+            $label = if ($index -eq 0) { 'All' } else { $Names[$index - 1] }
+            $checked = if ($index -eq 0) { $selectedCount -eq $Names.Count } else { $selected[$index - 1] }
+            $checkbox = if ($checked) { '[x]' } else { '[ ]' }
+            $pointer = if ($index -eq $cursor) { '>' } else { ' ' }
+            if ($index -eq $cursor) {
+                Write-Host "$pointer $checkbox $label" -ForegroundColor Cyan
+            } else {
+                Write-Host "$pointer $checkbox $label"
+            }
+        }
+        Write-Host ''
+        Write-Host "$selectedCount module(s) selected."
+        if ($message) {
+            Write-Host $message -ForegroundColor Yellow
+        }
+
+        try {
+            $key = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
+        } catch {
+            throw "Unable to read terminal input. Use -All or -Modules instead. $($_.Exception.Message)"
+        }
+        $message = ''
+        switch ($key.VirtualKeyCode) {
+            38 { $cursor = ($cursor + $Names.Count) % ($Names.Count + 1) }
+            40 { $cursor = ($cursor + 1) % ($Names.Count + 1) }
+            32 {
+                if ($cursor -eq 0) {
+                    $selectAll = $selectedCount -ne $Names.Count
+                    for ($index = 0; $index -lt $Names.Count; $index++) {
+                        $selected[$index] = $selectAll
+                    }
+                } else {
+                    $selected[$cursor - 1] = -not $selected[$cursor - 1]
+                }
+            }
+            13 {
+                if ($selectedCount -eq 0) {
+                    $message = 'Select at least one module, or press Esc to cancel.'
+                } else {
+                    for ($index = 0; $index -lt $Names.Count; $index++) {
+                        if ($selected[$index]) {
+                            $Names[$index]
+                        }
+                    }
+                    return
+                }
+            }
+            27 {
+                Write-Host 'Installation cancelled. No changes were made.'
+                return
+            }
+        }
+    }
+}
+
+if ($All -and $PSBoundParameters.ContainsKey('Modules')) {
+    throw 'Use either -All or -Modules, not both.'
+}
 
 $modulesPath = Join-Path $PSScriptRoot 'Modules'
 if (-not (Test-Path -LiteralPath $modulesPath -PathType Container)) {
@@ -14,9 +96,24 @@ if (-not (Test-Path -LiteralPath $modulesPath -PathType Container)) {
 
 $moduleDirectories = @(Get-ChildItem -LiteralPath $modulesPath -Directory | Where-Object {
     Test-Path -LiteralPath (Join-Path $_.FullName ($_.Name + '.psm1')) -PathType Leaf
-})
+} | Sort-Object Name)
 if ($moduleDirectories.Count -eq 0) {
     throw "No importable modules found in: $modulesPath"
+}
+
+if (-not $All) {
+    if ($PSBoundParameters.ContainsKey('Modules')) {
+        $unknownModules = @($Modules | Where-Object { $_ -notin $moduleDirectories.Name })
+        if ($unknownModules.Count -gt 0) {
+            throw "Unknown module(s): $($unknownModules -join ', '). Available modules: $($moduleDirectories.Name -join ', ')."
+        }
+    } else {
+        $Modules = @(Show-ModuleSelection -Names $moduleDirectories.Name)
+        if ($Modules.Count -eq 0) {
+            return
+        }
+    }
+    $moduleDirectories = @($moduleDirectories | Where-Object { $_.Name -in $Modules })
 }
 
 if ([string]::IsNullOrWhiteSpace($ModulePath)) {
