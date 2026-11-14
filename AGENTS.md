@@ -1,13 +1,13 @@
 # AGENTS.md
 
 ## What this repo is
-Flat collection of personal PowerShell modules for Windows. No build system, package manager, manifests (`.psd1`), or CI. Each module is `Modules/<name>/<name>.psm1` with explicit `Export-ModuleMember` at the bottom.
+Flat collection of personal PowerShell modules for Windows. No build system, package manager, module manifests, or CI. Each module is `Modules/<name>/<name>.psm1` with explicit `Export-ModuleMember` at the bottom (the `.psd1` files under `FancyGit-Pwsh/themes/` are theme data files, not manifests).
 
 ## Running tests
 Tests cover only `install.ps1` and use legacy Pester syntax (`Should Be`, not `Should -Be`):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -Command "Import-Module Pester -RequiredVersion 3.4.0 -Force; Invoke-Pester .\tests\"
+powershell -ExecutionPolicy Bypass -Command "Import-Module Pester -RequiredVersion 3.4.0 -Force; Invoke-Pester .\tests"
 ```
 
 - Pester **3.4.x required**: tests fail under Pester 5+ (Pester 6.2.0 is also installed and wins module-path precedence, so plain `Invoke-Pester` picks the wrong version).
@@ -29,5 +29,5 @@ powershell -ExecutionPolicy Bypass -Command "Import-Module Pester -RequiredVersi
 - The installer rewrites a managed block between `# >>> powershell-modules >>>` / `# <<< powershell-modules <<<` markers in `$PROFILE.CurrentUserAllHosts`. Don't hand-edit that block; incomplete markers make the installer throw.
 - Installer tests sandbox everything by copying `install.ps1` into a fixture and passing `-ModulePath`/`-ProfilePath` overrides — follow that pattern; never run it against the real profile in tests.
 - Importing `FancyGit-Pwsh` replaces the global `Prompt` by design: the psm1 runs `Enable-FancyGitPrompt` without `-Force` on load (Oh My Posh/Starship get a warning and keep their prompt). `Disable-FancyGitPrompt` restores the backup, but re-importing with `-Force` re-backs-up the already-replaced prompt.
-- `Modules/FancyGit-Pwsh` is a **nested git repo** (its own `.git`, separate history). `install.ps1` excludes `.git`/`.gitignore` from module copies — keep that filter when touching the copy loop.
+- The `install.ps1` copy loop deliberately skips `.git`/`.gitignore` (VCS metadata) so a module dir can safely be a nested git repo — keep that filter when touching the loop.
 - FancyGit themes (`Modules/FancyGit-Pwsh/themes/*.psd1`) must be saved as UTF-8 **with BOM**: Windows PowerShell 5.1 reads BOM-less `.psd1` files as ANSI and `Import-PowerShellDataFile` then breaks on the non-ASCII glyphs.

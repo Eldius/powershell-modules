@@ -1,8 +1,16 @@
 # Módulos do PowerShell
 
+## Requisitos
+
+- Windows PowerShell 5.1 ou PowerShell 7+.
+- Git no `PATH` — apenas para o FancyGit-Pwsh (sem o Git, o prompt mostra apenas o caminho).
+- Maven no `PATH` e pelo menos um JDK instalado — apenas para o módulo Java.
+- Para publicar no Service Bus: string de conexão SAS com permissão **Send** e autenticação SAS/local habilitada; nenhum módulo nem CLI do Azure é necessário.
+- Pester 3.4.x (já incluído no Windows PowerShell 5.1) — apenas para executar os testes do repositório.
+
 ## Módulos e funções exportadas
 
-Importe deste diretório o módulo necessário. O módulo Java exporta:
+Importe o módulo necessário a partir de `Modules\`. O módulo Java exporta:
 
 - `Import-DotEnv`: Lê as atribuições compatíveis de um arquivo `.env` e as retorna como strings `nome=valor`. Não modifica o ambiente.
 - `Set-JdkPath`: Adiciona ou atualiza o caminho de um JDK em `java\config.json`; use `-Remove` para remover uma versão.
@@ -37,7 +45,7 @@ publishEvt -Help
 Neste diretório, importe o módulo e execute seus comandos a partir do diretório de um projeto Maven:
 
 ```powershell
-Import-Module .\java\java.psm1 -Force
+Import-Module .\Modules\java\java.psm1 -Force
 
 # Inspeciona as atribuições analisadas de .env sem definir variáveis de ambiente do processo.
 Import-DotEnv -Path .\.env
@@ -101,7 +109,7 @@ Compatível com Windows PowerShell 5.1 e PowerShell 7; não requer módulo nem C
 Importe o módulo a partir deste diretório:
 
 ```powershell
-Import-Module .\azure-event-hub\azure-event-hub.psm1 -Force
+Import-Module .\Modules\azure-event-hub\azure-event-hub.psm1 -Force
 
 # String de conexão direta (use uma variável obtida de forma segura, não um segredo literal).
 publishEvt -BindingDefinition $connectionString -FilePath .\message.json -ContentType application/json
@@ -160,7 +168,7 @@ ou Starship estiver ativo, um aviso é exibido e o prompt atual é preservado.
 `Disable-FancyGitPrompt` restaura o prompt anterior.
 
 ```powershell
-Import-Module .\FancyGit-Pwsh\FancyGit-Pwsh.psm1 -Force
+Import-Module .\Modules\FancyGit-Pwsh\FancyGit-Pwsh.psm1 -Force
 
 fancygit theme darcula        # Temas: FancyGit-Pwsh\themes\*.psd1
 fancygit option UseColor true
@@ -174,14 +182,33 @@ internos do PowerShell (ReadOnly, AllScope) e são ignorados com aviso; para
 usá-los, remova os aliases internos no perfil antes de habilitar os aliases do
 FancyGit.
 
-## Perfil do PowerShell
+## Instalação
 
-Execute o instalador neste repositório para copiar os módulos do projeto para o
-diretório padrão de módulos do usuário atual e importá-los pelo perfil, em todos
-os hosts. A instalação é idempotente; execute novamente para atualizar os
-módulos instalados após alterações. Use `-WhatIf` para visualizar as mudanças e
-abra uma nova sessão do PowerShell para carregar os módulos. Use `-ModulePath`
-para selecionar outro diretório.
+Clone o repositório e execute o instalador:
+
+```powershell
+git clone <url-do-repositorio>
+cd powershell-modules
+
+# Menu interativo com caixas de seleção.
+.\install.ps1
+
+# Sem menu (inclusive para automação): todos os módulos ou apenas os informados.
+.\install.ps1 -All
+.\install.ps1 -Modules java,azure-event-hub
+
+# Simula a instalação sem gravar nada.
+.\install.ps1 -All -WhatIf
+```
+
+Se a política de execução bloquear os scripts, desbloqueie os arquivos antes
+(veja [Some snippets](#some-snippets)).
+
+O instalador copia os módulos selecionados para o diretório padrão de módulos
+do usuário atual e importa-os pelo perfil (`$PROFILE.CurrentUserAllHosts`), em
+todos os hosts. A instalação é idempotente; execute novamente para atualizar os
+módulos instalados após alterações. Use `-ModulePath` para selecionar outro
+diretório. Abra uma nova sessão do PowerShell para carregar os módulos.
 
 O instalador exibe um menu com caixas de selecao. Use as setas para cima/baixo
 para navegar, Espaco para marcar um modulo ou **All**, Enter para instalar e Esc
@@ -190,19 +217,25 @@ selecionados sao copiados e incluidos no bloco gerenciado do perfil; arquivos
 instalados anteriormente nao sao removidos. Arquivos `config.json` existentes
 sao preservados.
 
-```powershell
-.\install.ps1
-
-# Instala todos os modulos sem abrir o menu (inclusive para automacao).
-.\install.ps1 -All
-
-# Instala apenas os modulos informados ou simula a instalacao.
-.\install.ps1 -Modules java,azure-event-hub
-.\install.ps1 -Modules java -WhatIf
-```
-
 O menu exige um terminal interativo. Use `-All` ou `-Modules` quando a entrada
 ou a saida estiver redirecionada. Essas duas opcoes nao podem ser combinadas.
+
+### Configuração por módulo
+
+- **java**: registre os JDKs instalados com `Set-JdkPath` (ex.:
+  `Set-JdkPath -Version 25 -Path 'C:\Program Files\Java\jdk-25'`) e,
+  opcionalmente, os perfis Maven com `Set-MavenProfiles`. As alterações são
+  gravadas no `config.json` ao lado do módulo instalado e preservadas entre
+  reinstalações.
+- **FancyGit-Pwsh**: nenhuma configuração inicial — o prompt é ativado ao
+  importar o módulo. Personalize com `fancygit theme <nome>` e
+  `fancygit enable aliases`.
+- **azure-event-hub**: defina a variável de ambiente
+  `SERVICEBUS_CONNECTION_STRING` (ou informe a string de conexão em cada
+  chamada de `publishEvt`).
+
+Sem instalar, importe qualquer módulo diretamente do repositório:
+`Import-Module .\Modules\<nome>\<nome>.psm1 -Force`.
 
 ## Some snippets
 
