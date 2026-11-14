@@ -238,7 +238,7 @@ Without installing, import any module directly from the repository:
 # Display profile file location
 Write-Output $profile
 ```
-
+```powershell
 # Display the edited profile file location
 Write-Output $PROFILE.CurrentUserAllHosts
 ```
