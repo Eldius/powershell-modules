@@ -12,6 +12,18 @@ Importe deste diretório o módulo necessário. O módulo Java exporta:
 
 O módulo Service Bus exporta `publishEvt`, que publica um arquivo como uma única mensagem em uma fila do Azure Service Bus.
 
+O módulo FancyGit-Pwsh exporta:
+
+- `Get-FancyGitStatus`: Retorna o objeto de status do Git de um caminho (ramo, ahead/behind e contagens de alterações).
+- `Get-FancyGitPromptString`: Monta a string completa do prompt de um caminho.
+- `Format-FancyGitPrompt`: Retorna apenas o fragmento Git do prompt, com tema opcional.
+- `Set-FancyGitTheme`: Seleciona o tema ativo (classic, ascii, minimal, darcula).
+- `Set-FancyGitOption`: Altera opções como ShowUserHost, PathStyle, UseColor e StatusCacheMilliseconds.
+- `Enable-FancyGitPrompt` e `Disable-FancyGitPrompt`: Ativa o prompt FancyGit ou restaura o prompt anterior.
+- `Enable-FancyGitAliases` e `Disable-FancyGitAliases`: Instala ou remove os aliases do Git portados do fancy-git (gs, ga, gcm, gpl, ...), restaurando os originais.
+- `Enable-FancyGitPSReadLine`: Aplica a configuração recomendada do PSReadLine.
+- `fancygit`: Ponto de entrada único, no estilo `git`, para as funções acima, com tab-completion.
+
 Todas as funções exportadas aceitam `-Help` para exibir um resumo e as descrições dos parâmetros. Também é possível usar o comando de ajuda do PowerShell:
 
 ```powershell
@@ -139,6 +151,29 @@ a mensagem talvez já tenha sido aceita. Verifique o status antes de enviar nova
 para evitar duplicatas.
 
 
+## Prompt Git (FancyGit-Pwsh)
+
+Prompt com informações do Git inspirado no
+[fancy-git](https://github.com/diogocavilha/fancy-git), sem depender de Oh My
+Posh, Starship ou posh-git. Importar o módulo já ativa o prompt: se Oh My Posh
+ou Starship estiver ativo, um aviso é exibido e o prompt atual é preservado.
+`Disable-FancyGitPrompt` restaura o prompt anterior.
+
+```powershell
+Import-Module .\FancyGit-Pwsh\FancyGit-Pwsh.psm1 -Force
+
+fancygit theme darcula        # Temas: FancyGit-Pwsh\themes\*.psd1
+fancygit option UseColor true
+fancygit enable aliases       # Instala os aliases do Git (gs, ga, gcm, ...)
+fancygit help
+```
+
+Temas novos são arquivos `.psd1` na pasta `themes` do módulo e devem ser salvos
+como UTF-8 com BOM. Os aliases `gcm`, `gps`, `gl` e `gu` colidem com aliases
+internos do PowerShell (ReadOnly, AllScope) e são ignorados com aviso; para
+usá-los, remova os aliases internos no perfil antes de habilitar os aliases do
+FancyGit.
+
 ## Perfil do PowerShell
 
 Execute o instalador neste repositório para copiar os módulos do projeto para o
@@ -169,10 +204,17 @@ sao preservados.
 O menu exige um terminal interativo. Use `-All` ou `-Modules` quando a entrada
 ou a saida estiver redirecionada. Essas duas opcoes nao podem ser combinadas.
 
+## Some snippets
+
 ```powershell
 # Exibe o caminho do arquivo de perfil
 Write-Output $profile
 
 # Exibe o caminho do arquivo de perfil alterado pelo install.ps1
 Write-Output $PROFILE.CurrentUserAllHosts
+```
+
+```powershell
+# Define todos os scripts deste repositório como confiáveis
+Get-ChildItem -Path "." -Recurse -Include *.ps1, *.psm1, *.psd1 | Unblock-File
 ```

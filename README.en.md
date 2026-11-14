@@ -12,6 +12,18 @@ Import the module you need from this directory. The Java module exports:
 
 The Service Bus module exports `publishEvt`, which publishes a file as one Azure Service Bus queue message.
 
+The FancyGit-Pwsh module exports:
+
+- `Get-FancyGitStatus`: Returns the Git status object for a path (branch, ahead/behind and change counts).
+- `Get-FancyGitPromptString`: Builds the full prompt string for a path.
+- `Format-FancyGitPrompt`: Returns only the Git fragment of the prompt, with an optional theme.
+- `Set-FancyGitTheme`: Selects the active theme (classic, ascii, minimal, darcula).
+- `Set-FancyGitOption`: Changes options such as ShowUserHost, PathStyle, UseColor and StatusCacheMilliseconds.
+- `Enable-FancyGitPrompt` and `Disable-FancyGitPrompt`: Activates the FancyGit prompt or restores the previous one.
+- `Enable-FancyGitAliases` and `Disable-FancyGitAliases`: Installs or removes the Git aliases ported from fancy-git (gs, ga, gcm, gpl, ...), restoring the originals.
+- `Enable-FancyGitPSReadLine`: Applies the recommended PSReadLine configuration.
+- `fancygit`: Single `git`-style entrypoint for the functions above, with tab-completion.
+
 Each exported function accepts `-Help` to display its summary and parameter descriptions. You can also use PowerShell's help command, for example:
 
 ```powershell
@@ -135,6 +147,29 @@ by the function: after a timeout the message may already have been accepted,
 so verify before sending again to avoid duplicates.
 
 
+## Git prompt (FancyGit-Pwsh)
+
+A Git-aware prompt inspired by
+[fancy-git](https://github.com/diogocavilha/fancy-git), with no Oh My Posh,
+Starship or posh-git dependency. Importing the module enables the prompt: when
+Oh My Posh or Starship is active, a warning is shown and the current prompt is
+kept. `Disable-FancyGitPrompt` restores the previous prompt.
+
+```powershell
+Import-Module .\FancyGit-Pwsh\FancyGit-Pwsh.psm1 -Force
+
+fancygit theme darcula        # Themes: FancyGit-Pwsh\themes\*.psd1
+fancygit option UseColor true
+fancygit enable aliases       # Install the Git aliases (gs, ga, gcm, ...)
+fancygit help
+```
+
+New themes are `.psd1` files in the module's `themes` folder and must be saved
+as UTF-8 with BOM. The `gcm`, `gps`, `gl` and `gu` aliases collide with
+built-in PowerShell aliases (ReadOnly, AllScope) and are skipped with a
+warning; to use them, remove the built-ins in your profile before enabling the
+FancyGit aliases.
+
 ## PowerShell profile
 
 Run the installer from this repository to copy its modules into the current
@@ -164,7 +199,18 @@ Existing `config.json` files are preserved.
 Interactive selection requires a terminal. Use `-All` or `-Modules` when input
 or output is redirected. These two options cannot be combined.
 
+## Some snippets
+
 ```powershell
 # Display profile file location
 Write-Output $profile
+```
+
+# Display the edited profile file location
+Write-Output $PROFILE.CurrentUserAllHosts
+```
+
+```powershell
+# Set all PowerShell script files from this repository as trusted for your system
+Get-ChildItem -Path "." -Recurse -Include *.ps1, *.psm1, *.psd1 | Unblock-File
 ```

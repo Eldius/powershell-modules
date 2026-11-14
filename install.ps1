@@ -140,6 +140,11 @@ foreach ($moduleDirectory in $moduleDirectories) {
         }
 
         foreach ($sourceFile in Get-ChildItem -LiteralPath $moduleDirectory.FullName -Recurse -File) {
+            # Never install version-control metadata (e.g. a nested git repo).
+            if ($sourceFile.FullName -like '*\.git\*' -or $sourceFile.Name -ieq '.git' -or
+                $sourceFile.Name -ieq '.gitignore') {
+                continue
+            }
             $relativePath = $sourceFile.FullName.Substring($moduleDirectory.FullName.Length).
                 TrimStart([char[]]@([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar))
             $destinationFile = Join-Path $moduleDestination $relativePath
