@@ -1,0 +1,11 @@
+{
+    "Theme": "darcula",
+    "ShowUserHost": true,
+    "ShowAdmin": true,
+    "ShowExitCode": true,
+    "PathStyle": "Short",
+    "UseColor": false,
+    "ShowGitStatus": true,
+    "StatusCacheMilliseconds": 0,
+    "AliasesEnabled": false
+}
