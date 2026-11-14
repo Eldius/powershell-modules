@@ -401,20 +401,20 @@ function Resolve-FancyGitShortPath {
         $full = $Path
     }
 
-    $home = $HOME
+    $home_ = $HOME
     try {
-        $home = (Resolve-Path -LiteralPath $HOME -ErrorAction Stop).Path
+        $home_ = (Resolve-Path -LiteralPath $HOME -ErrorAction Stop).Path
     }
     catch {
-        $home = $HOME
+        $home_ = $HOME
     }
 
-    if ($full -eq $home) {
+    if ($full -eq $home_) {
         return '~'
     }
 
-    if ($full.StartsWith($home + '\', [System.StringComparison]::OrdinalIgnoreCase)) {
-        return '~' + $full.Substring($home.Length)
+    if ($full.StartsWith($home_ + '\', [System.StringComparison]::OrdinalIgnoreCase)) {
+        return '~' + $full.Substring($home_.Length)
     }
 
     $trimmed = $full.TrimEnd('\')
